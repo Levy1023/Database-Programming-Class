@@ -2,7 +2,7 @@
 -- ELECTRONICS RETAIL COMPANY - SQL QUERIES
 -- Executable Query Script
 -- Author: Christopher Garcia
--- Date: January 17, 2025
+-- Date: January 27, 2026
 -- ============================================================================
 
 -- ============================================================================
