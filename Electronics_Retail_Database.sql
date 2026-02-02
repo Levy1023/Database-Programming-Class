@@ -2,7 +2,7 @@
 -- ELECTRONICS RETAIL COMPANY DATABASE
 -- Complete SQL Implementation Script
 -- Author: Christopher Garcia
--- Date: January 17, 2025
+-- Date: January 27, 2026
 -- ============================================================================
 
 -- Drop existing tables
