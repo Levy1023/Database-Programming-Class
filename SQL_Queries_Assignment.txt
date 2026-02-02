@@ -1,0 +1,458 @@
+SQL QUERIES ASSIGNMENT
+Electronics Retail Company - Data Analysis and Reporting
+
+Student: Christopher Garcia
+Course: Database Programming
+Date: January 17, 2025
+
+================================================================================
+ASSIGNMENT OVERVIEW
+================================================================================
+
+This document contains SQL queries designed to retrieve and analyze data from
+the electronics retail company database. All queries include comprehensive
+comments explaining their purpose, business use case, logic, and expected output.
+
+Database Structure:
+- Suppliers: Vendor information
+- Categories: Product classifications
+- Products: Inventory with pricing and stock levels
+- Customers: Customer records
+- Orders: Order transaction headers
+- Order_Details: Individual order line items
+
+================================================================================
+PART 1: DATA RETRIEVAL FROM A SINGLE TABLE
+================================================================================
+
+-- ============================================================================
+-- QUERY 1.1: List All Products with Essential Information
+-- ============================================================================
+-- Purpose: Retrieve a complete product catalog showing key attributes
+-- Business Use: Provides inventory overview for management, stock audits,
+--               and catalog generation. Shows what products are available,
+--               their pricing, and current stock levels.
+-- Expected Output: All products with 4 columns - name, category, price, quantity
+-- ============================================================================
+
+SELECT 
+    Product_Name,           -- Product name for identification
+    Category_ID,            -- Foreign key reference to Categories table
+    Unit_Price,             -- Retail price per unit (DECIMAL format)
+    QOH                     -- Quantity on Hand - current inventory level
+FROM 
+    Products                -- Source table containing all product data
+ORDER BY 
+    Product_Name ASC;       -- Alphabetical sort for easy reference
+    -- Using ASC (ascending) provides alphabetical A-Z ordering
+    -- Makes it easy to locate specific products in the result set
+
+
+-- ============================================================================
+-- QUERY 1.2: Identify Out-of-Stock Products
+-- ============================================================================
+-- Purpose: Find products with zero inventory that need immediate reordering
+-- Business Use: Critical for inventory management and preventing lost sales.
+--               Identifies products that should be reordered from suppliers.
+--               Helps avoid customer disappointment from unavailable items.
+-- Logic: WHERE clause filters to include only rows where QOH equals zero
+-- Expected Output: Products with QOH = 0 (empty result if all items in stock)
+-- ============================================================================
+
+SELECT 
+    Product_ID,             -- Unique identifier for product tracking
+    Product_Name,           -- Name of out-of-stock product
+    Category_ID,            -- Category for reporting by product type
+    Supplier_ID,            -- Identifies which supplier to contact for reorder
+    Unit_Price,             -- Price information for reorder budget planning
+    QOH                     -- Will display 0 for all returned rows
+FROM 
+    Products                -- Product inventory table
+WHERE 
+    QOH = 0                 -- Filter condition: quantity equals zero
+    -- The = operator checks for exact equality
+    -- Only products with exactly 0 units in stock are included
+ORDER BY 
+    Category_ID ASC,        -- Group by category for organized review
+    Product_Name ASC;       -- Then alphabetically within each category
+
+
+-- ============================================================================
+-- QUERY 1.3: Products in Mid-Price Range ($100-$500)
+-- ============================================================================
+-- Purpose: Retrieve products within a specific price range for analysis
+-- Business Use: Identifies mid-tier products that typically have high sales
+--               volume. Useful for marketing campaigns targeting customers
+--               with moderate budgets. Helps analyze pricing strategy in
+--               the competitive "sweet spot" price range.
+-- Logic: BETWEEN operator provides inclusive range checking
+-- Expected Output: Products priced from $100.00 to $500.00 (inclusive)
+-- ============================================================================
+
+SELECT 
+    Product_ID,             -- Unique product identifier
+    Product_Name,           -- Product name for identification
+    Category_ID,            -- Category classification
+    Unit_Price,             -- Price (guaranteed to be $100-$500)
+    QOH                     -- Current stock level for availability check
+FROM 
+    Products                -- Product inventory table
+WHERE 
+    Unit_Price BETWEEN 100 AND 500
+    -- BETWEEN is inclusive on both ends
+    -- This includes products priced at exactly $100.00 and exactly $500.00
+    -- Equivalent to: Unit_Price >= 100 AND Unit_Price <= 500
+ORDER BY 
+    Unit_Price ASC,         -- Sort by price (lowest to highest)
+    Product_Name ASC;       -- Secondary sort by name for products at same price
+    -- This ordering helps identify the most affordable options first
+
+
+-- ============================================================================
+-- QUERY 1.4: Count Total Products per Category
+-- ============================================================================
+-- Purpose: Calculate how many products exist in each category
+-- Business Use: Reveals inventory distribution across product categories.
+--               Identifies which categories have the most variety and may
+--               reveal gaps in the product catalog. Helps balance inventory
+--               investment across different product lines.
+-- Logic: GROUP BY aggregates rows by Category_ID, COUNT(*) tallies products
+-- Expected Output: One row per category with category ID and count
+-- Aggregation: COUNT(*) is an aggregate function that counts all rows in each group
+-- ============================================================================
+
+SELECT 
+    Category_ID,                    -- Category identifier (grouping column)
+    COUNT(*) AS Product_Count       -- Total number of products in category
+    -- COUNT(*) counts all rows in each group created by GROUP BY
+    -- It includes all products regardless of their stock level
+    -- The asterisk (*) means "count all rows" in the group
+FROM 
+    Products                        -- Source table with category assignments
+GROUP BY 
+    Category_ID                     -- Aggregate products by category
+    -- GROUP BY creates separate groups for each unique Category_ID value
+    -- The COUNT(*) function is then applied to each group independently
+    -- Result: one row per category showing its product count
+ORDER BY 
+    Product_Count DESC,             -- Sort by count (most products first)
+    Category_ID ASC;                -- Then by category ID for consistency
+    -- DESC (descending) puts categories with most products at top
+    -- Helps quickly identify which categories have the most variety
+
+
+-- ============================================================================
+-- QUERY 1.5: Calculate Average Product Price by Category
+-- ============================================================================
+-- Purpose: Determine the mean price of products within each category
+-- Business Use: Reveals pricing trends across product categories. Identifies
+--               premium vs. budget categories to support pricing decisions.
+--               Categories with higher averages may indicate luxury or
+--               specialized product lines. Helps set price expectations
+--               for new products being added to each category.
+-- Logic: GROUP BY with AVG() aggregate function, ROUND() for currency formatting
+-- Expected Output: One row per category showing average price
+-- Aggregation: AVG() calculates arithmetic mean of all Unit_Price values in each group
+-- ============================================================================
+
+SELECT 
+    Category_ID,                    -- Category identifier (grouping column)
+    ROUND(AVG(Unit_Price), 2) AS Average_Price
+    -- AVG() calculates the arithmetic mean (sum of prices / count of products)
+    -- It operates on each group created by GROUP BY independently
+    -- ROUND(value, 2) ensures exactly 2 decimal places (standard currency format)
+    -- Example: ROUND(123.456, 2) returns 123.46
+FROM 
+    Products                        -- Source table with price data
+GROUP BY 
+    Category_ID                     -- Create one group per category
+    -- All products sharing the same Category_ID are grouped together
+    -- AVG() is then calculated separately for each group
+ORDER BY 
+    Average_Price DESC,             -- Sort by average price (highest first)
+    Category_ID ASC;                -- Then by category ID
+    -- This ordering immediately shows which categories are most expensive
+    -- Useful for identifying premium product lines
+
+
+================================================================================
+PART 2: MULTI-TABLE QUERIES USING JOINS
+================================================================================
+
+-- ============================================================================
+-- QUERY 2.1: Products with Supplier Contact Information (INNER JOIN)
+-- ============================================================================
+-- Purpose: Combine product data with supplier contact details in one view
+-- Business Use: Creates comprehensive reference for reordering and vendor
+--               management. When stock runs low, staff can immediately see
+--               which supplier to contact without looking up information
+--               separately. Essential for supply chain communication.
+-- Join Type: INNER JOIN - returns only products with matching suppliers
+-- Logic: Joins on Supplier_ID foreign key relationship
+-- Expected Output: Each product with its supplier's name and contact info
+-- Relationship: Products.Supplier_ID = Suppliers.Supplier_ID (many-to-one)
+-- ============================================================================
+
+SELECT 
+    p.Product_ID,                   -- Unique product identifier
+    p.Product_Name,                 -- Name of the product
+    p.Unit_Price,                   -- Product price for reference
+    p.QOH,                          -- Current inventory level
+    s.Supplier_Name,                -- Supplier company name
+    s.Phone,                        -- Supplier phone number for calls
+    s.Email                         -- Supplier email for communication
+FROM 
+    Products p                      -- Main table (aliased as 'p' for brevity)
+INNER JOIN 
+    Suppliers s                     -- Join with Suppliers table (aliased as 's')
+    ON p.Supplier_ID = s.Supplier_ID
+    -- ON clause specifies the join condition
+    -- Links rows where Supplier_ID matches in both tables
+    -- INNER JOIN returns only rows with matches in BOTH tables
+    -- If a product has no supplier, it won't appear in results
+ORDER BY 
+    s.Supplier_Name ASC,            -- Primary sort: group by supplier
+    p.Product_Name ASC;             -- Secondary sort: alphabetical within supplier
+    -- This ordering shows all products from each supplier together
+
+
+-- ============================================================================
+-- QUERY 2.2: Comprehensive Sales Report (Multiple INNER JOINs)
+-- ============================================================================
+-- Purpose: Create detailed sales report linking orders to products and categories
+-- Business Use: Provides complete sales intelligence showing what products sold,
+--               their categories, quantities, and transaction dates. Enables
+--               analysis of which product categories are most popular and
+--               identification of sales trends over time.
+-- Join Type: Multiple INNER JOINs chaining 4 tables together
+-- Logic: Order_Details → Products → Categories, Order_Details → Orders
+-- Expected Output: Each sale with product name, category, quantity, and date
+-- Relationships: Three foreign key relationships linked together
+-- ============================================================================
+
+SELECT 
+    p.Product_Name,                 -- Name of product sold
+    c.Category_Name,                -- Category classification
+    od.Quantity,                    -- Number of units sold
+    od.Line_Total,                  -- Revenue from this line item
+    o.Order_Date,                   -- Date of sale (DATE type)
+    o.Order_Time                    -- Time of sale (TIME type)
+FROM 
+    Order_Details od                -- Start with line items (aliased 'od')
+    -- Order_Details is the junction table connecting orders to products
+INNER JOIN 
+    Products p                      -- Join to get product information
+    ON od.Product_ID = p.Product_ID
+    -- Links each order line to its product details
+INNER JOIN 
+    Categories c                    -- Join to get category names
+    ON p.Category_ID = c.Category_ID
+    -- Links each product to its category classification
+INNER JOIN 
+    Orders o                        -- Join to get order date/time
+    ON od.Order_ID = o.Order_ID
+    -- Links each line item back to its parent order
+    -- All three JOINs must succeed for a row to appear in results
+ORDER BY 
+    o.Order_Date DESC,              -- Most recent orders first
+    o.Order_Time DESC,              -- Then by time (latest first)
+    p.Product_Name ASC;             -- Finally by product name
+    -- This ordering shows newest sales at the top of the report
+
+
+-- ============================================================================
+-- QUERY 2.3: All Suppliers with Their Products (LEFT JOIN)
+-- ============================================================================
+-- Purpose: List all suppliers and any products they supply, including suppliers
+--          who currently supply no products
+-- Business Use: Identifies suppliers in the system who may not be actively
+--               supplying products. Useful for vendor relationship management
+--               and identifying potential gaps in the supply chain. Shows
+--               which suppliers are active vs. inactive.
+-- Join Type: LEFT JOIN (LEFT OUTER JOIN) - includes all suppliers
+-- Logic: Starts with Suppliers (left table), matches Products where possible
+-- Expected Output: All suppliers + their products (NULLs if no products)
+-- Key Point: LEFT JOIN keeps all rows from left table even without matches
+-- ============================================================================
+
+SELECT 
+    s.Supplier_ID,                  -- Supplier identifier
+    s.Supplier_Name,                -- Supplier company name
+    s.Phone,                        -- Contact phone
+    s.Email,                        -- Contact email
+    p.Product_ID,                   -- Product ID (NULL if supplier has no products)
+    p.Product_Name,                 -- Product name (NULL if no products)
+    p.Unit_Price,                   -- Product price (NULL if no products)
+    p.QOH                           -- Stock level (NULL if no products)
+FROM 
+    Suppliers s                     -- Left table - ALL rows will be included
+LEFT JOIN 
+    Products p                      -- Right table - matched where possible
+    ON s.Supplier_ID = p.Supplier_ID
+    -- LEFT JOIN returns all suppliers from left table (Suppliers)
+    -- For suppliers with matching products, product data is included
+    -- For suppliers with NO matching products, product columns show NULL
+    -- This is different from INNER JOIN which would exclude those suppliers
+ORDER BY 
+    s.Supplier_Name ASC,            -- Sort by supplier name
+    p.Product_Name ASC;             -- Then by product name (NULLs appear last)
+    -- Suppliers with no products will show NULL in product columns
+
+
+-- ============================================================================
+-- QUERY 2.4: All Products and Suppliers with Unmatched Records (FULL OUTER JOIN)
+-- ============================================================================
+-- Purpose: Show complete view of products and suppliers including unmatched rows
+-- Business Use: Identifies orphaned records - products without suppliers OR
+--               suppliers without products. Critical for data integrity checks.
+--               Helps find data quality issues that need resolution.
+-- Join Type: FULL OUTER JOIN simulated with UNION of LEFT and RIGHT JOINs
+-- Logic: Combines LEFT JOIN (all suppliers) and RIGHT JOIN (all products)
+-- Expected Output: All suppliers and all products, including unmatched rows
+-- Note: MySQL doesn't support FULL OUTER JOIN directly, so we simulate it
+-- ============================================================================
+
+-- First part: LEFT JOIN to get all suppliers (including those with no products)
+SELECT 
+    s.Supplier_ID,                  -- Supplier ID (NULL if product has no supplier)
+    s.Supplier_Name,                -- Supplier name (NULL if orphaned product)
+    p.Product_ID,                   -- Product ID (NULL if supplier has no products)
+    p.Product_Name,                 -- Product name (NULL if supplier has no products)
+    p.Unit_Price                    -- Product price (NULL if supplier has no products)
+FROM 
+    Suppliers s                     -- Left table for LEFT JOIN
+LEFT JOIN 
+    Products p                      -- Right table
+    ON s.Supplier_ID = p.Supplier_ID
+    -- LEFT JOIN ensures all suppliers appear, even without products
+
+UNION                               -- UNION combines results and removes duplicates
+-- UNION merges the results from both queries
+-- It automatically removes duplicate rows that appear in both result sets
+
+-- Second part: RIGHT JOIN to get all products (including those without suppliers)
+SELECT 
+    s.Supplier_ID,                  -- Supplier ID (NULL if product is orphaned)
+    s.Supplier_Name,                -- Supplier name (NULL if product has no supplier)
+    p.Product_ID,                   -- Product ID (always has value in this part)
+    p.Product_Name,                 -- Product name (always has value)
+    p.Unit_Price                    -- Product price (always has value)
+FROM 
+    Suppliers s                     -- Left table for RIGHT JOIN
+RIGHT JOIN 
+    Products p                      -- Right table ensures all products included
+    ON s.Supplier_ID = p.Supplier_ID
+    -- RIGHT JOIN ensures all products appear, even without suppliers
+    -- Combined with UNION, this simulates FULL OUTER JOIN behavior
+    -- Final result: all suppliers + all products, with NULLs for unmatched rows
+ORDER BY 
+    Supplier_Name ASC,              -- Sort by supplier name (NULLs first or last)
+    Product_Name ASC;               -- Then by product name
+
+
+-- ============================================================================
+-- QUERY 2.5: Categories with More Than 10 Products in Stock (HAVING clause)
+-- ============================================================================
+-- Purpose: Identify categories that have substantial inventory (>10 total units)
+-- Business Use: Highlights categories with healthy stock levels. Useful for
+--               identifying which product lines have adequate inventory for
+--               sales demand. Helps balance inventory investment and identify
+--               categories that may be overstocked.
+-- Logic: GROUP BY to aggregate by category, SUM() to total QOH, HAVING to filter
+-- Expected Output: Categories where sum of QOH across all products exceeds 10
+-- Key Point: HAVING filters groups AFTER aggregation (WHERE filters BEFORE)
+-- ============================================================================
+
+SELECT 
+    c.Category_ID,                  -- Category identifier
+    c.Category_Name,                -- Category name from Categories table
+    COUNT(p.Product_ID) AS Product_Count,    -- Number of products in category
+    SUM(p.QOH) AS Total_Stock       -- Sum of all quantities on hand
+    -- SUM() is an aggregate function that adds up QOH for all products
+    -- in each category group created by GROUP BY
+FROM 
+    Categories c                    -- Start with Categories table
+INNER JOIN 
+    Products p                      -- Join to get product inventory data
+    ON c.Category_ID = p.Category_ID
+    -- Links each category to its products
+    -- Using INNER JOIN ensures only categories with products are included
+GROUP BY 
+    c.Category_ID,                  -- Create groups by category
+    c.Category_Name                 -- Include category name in grouping
+    -- GROUP BY creates one group per category
+    -- All products in same category are aggregated together
+HAVING 
+    SUM(p.QOH) > 10                 -- Filter to only categories with >10 total units
+    -- HAVING filters the grouped results AFTER aggregation
+    -- This is different from WHERE which filters BEFORE grouping
+    -- HAVING is necessary here because we're filtering on an aggregate (SUM)
+    -- Only categories with cumulative stock exceeding 10 units appear in results
+ORDER BY 
+    Total_Stock DESC,               -- Sort by total stock (highest first)
+    Category_Name ASC;              -- Then alphabetically by category name
+    -- This shows which categories have the most inventory available
+
+
+================================================================================
+QUERY TESTING AND VERIFICATION
+================================================================================
+
+-- After running all queries, verify:
+-- 1. All queries execute without syntax errors
+-- 2. Results match expected output based on data in database
+-- 3. JOINs return appropriate number of rows
+-- 4. Aggregate functions calculate correct values
+-- 5. NULL values appear where expected in OUTER JOINs
+-- 6. HAVING clause properly filters grouped results
+
+-- Sample verification queries:
+
+-- Verify total product count
+SELECT COUNT(*) AS Total_Products FROM Products;
+
+-- Verify total order count
+SELECT COUNT(*) AS Total_Orders FROM Orders;
+
+-- Verify category count
+SELECT COUNT(*) AS Total_Categories FROM Categories;
+
+-- Check for out-of-stock products
+SELECT COUNT(*) AS Out_Of_Stock_Count 
+FROM Products 
+WHERE QOH = 0;
+
+
+================================================================================
+SUMMARY
+================================================================================
+
+This assignment demonstrates proficiency in:
+
+1. Single-Table Queries:
+   - SELECT with column selection
+   - WHERE clause for filtering (equality, BETWEEN)
+   - ORDER BY for sorting results
+   - Aggregate functions (COUNT, AVG, SUM)
+   - GROUP BY for data aggregation
+   - HAVING for filtering grouped results
+
+2. Multi-Table Queries:
+   - INNER JOIN for matching rows
+   - LEFT JOIN for including all left table rows
+   - RIGHT JOIN for including all right table rows
+   - FULL OUTER JOIN simulation using UNION
+   - Multiple table joins (3+ tables)
+   - Foreign key relationships
+   - Table aliases for readability
+
+3. Comments and Documentation:
+   - Clear purpose statements
+   - Business use case explanations
+   - Logic and syntax explanations
+   - Expected output descriptions
+   - Key points and important notes
+
+All queries have been designed to execute correctly on the electronics retail
+company database and provide actionable business intelligence for inventory
+management, sales analysis, and supplier relationship management.
